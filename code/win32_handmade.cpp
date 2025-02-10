@@ -1,7 +1,59 @@
 #include <windows.h>
 
+// TODO: this is a global for now.
+static bool Running;
+static BITMAPINFO BitmapInfo;
+static void *BitmapMemory;
+static HBITMAP BitmapHandle;
+static HDC DeviceContext;
+static HDC BitmapDeviceContext;
+
+static void
+Win32ResizeDIBSection(int Width, int Height)
+{
+    if (BitmapHandle)
+    {
+        DeleteObject(BitmapHandle);
+    }
+    
+    if (!BitmapDeviceContext)
+    {
+        BitmapDeviceContext = CreateCompatibleDC(0);
+    }
+
+    BitmapInfo.bmiHeader.biSize = sizeof(BitmapInfo.bmiHeader);
+    BitmapInfo.bmiHeader.biWidth = Width;
+    BitmapInfo.bmiHeader.biHeight = Height;
+    BitmapInfo.bmiHeader.biPlanes = 1;
+    BitmapInfo.bmiHeader.biBitCount = 32;
+    BitmapInfo.bmiHeader.biCompression = BI_RGB;
+    // BitmapInfo.bmiHeader.biSizeImage = 0;
+    // BitmapInfo.bmiHeader.biXPelsPerMeter = 0;
+    // BitmapInfo.bmiHeader.biYPelsPerMeter = 0;
+    // BitmapInfo.bmiHeader.biClrUsed = 0;
+    // BitmapInfo.bmiHeader.biClrImportant = 0;
+
+    BitmapHandle = CreateDIBSection(DeviceContext,
+                                    &BitmapInfo,
+                                    DIB_RGB_COLORS,
+                                    &BitmapMemory,
+                                    0, 0);
+}
+
+static void
+Win32UpdateWindow(HDC DeviceContext, int X, int Y, int Width, int Height)
+{
+    StretchDIBits(DeviceContext,
+                  X, Y, Width, Height,
+                  X, Y, Width, Height,
+                  BitmapMemory,
+                  &BitmapInfo,
+                  DIB_RGB_COLORS,
+                  SRCCOPY);
+}
+
 LRESULT CALLBACK
-MainWindowCallback(HWND Window,
+Win32MainWindowCallback(HWND Window,
                    UINT Message,
                    WPARAM WParam,
                    LPARAM LParam)
@@ -11,14 +63,21 @@ MainWindowCallback(HWND Window,
     {
         case WM_SIZE:
         {
-            OutputDebugStringA("Size\n");
+            // OutputDebugStringA("Size\n");
+            RECT ClientRect;
+            GetClientRect(Window, &ClientRect);
+            int Width = ClientRect.right - ClientRect.left;
+            int Height = ClientRect.bottom - ClientRect.top;
+            Win32ResizeDIBSection(Width, Height);
         } break;
         case WM_DESTROY:
         {
+            Running = false;
             OutputDebugStringA("Destroy\n");
         } break;
         case WM_CLOSE:
         {
+            Running = false;
             OutputDebugStringA("Close\n");
         } break;
         case WM_ACTIVATEAPP:
@@ -33,9 +92,10 @@ MainWindowCallback(HWND Window,
             int Y = Paint.rcPaint.top;
             int Width = Paint.rcPaint.right - Paint.rcPaint.left;
             int Height = Paint.rcPaint.bottom - Paint.rcPaint.top;
-            static DWORD Operation = WHITENESS;
-            Operation == WHITENESS ? Operation = BLACKNESS : Operation = WHITENESS;
-            PatBlt(DeviceContext, X, Y, Width, Height, Operation);
+            Win32UpdateWindow(DeviceContext, X, Y, Width, Height);
+            // static DWORD Operation = WHITENESS;
+            // Operation == WHITENESS ? Operation = BLACKNESS : Operation = WHITENESS;
+            // PatBlt(DeviceContext, X, Y, Width, Height, Operation);
             // BOOL EndPaint(
             //   [in] HWND              hWnd,
             //   [in] const PAINTSTRUCT *lpPaint
@@ -58,7 +118,7 @@ int CALLBACK WinMain(HINSTANCE Instance,
     WNDCLASSA WindowClass = {};
 
     // WindowClass.style = CS_OWNDC | CS_HREDRAW | CS_VREDRAW;
-    WindowClass.lpfnWndProc = MainWindowCallback;
+    WindowClass.lpfnWndProc = Win32MainWindowCallback;
     WindowClass.hInstance = Instance;
     // WindowClass.hIcon;
     WindowClass.lpszClassName = "HandmadeHeroWindowClass";
@@ -79,9 +139,10 @@ int CALLBACK WinMain(HINSTANCE Instance,
                                             0);
         if(WindowHandle)
         {
-            MSG Message;
-            for(;;)
+            Running = true;
+            while (Running)
             {
+                MSG Message;
                 BOOL MessageResult = GetMessageA(&Message, 0, 0, 0);
                 if (MessageResult > 0)
                 {
