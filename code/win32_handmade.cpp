@@ -17,6 +17,30 @@ static BITMAPINFO BitmapInfo;
 static void *BitmapMemory;
 static int BitmapWidth;
 static int BitmapHeight;
+static int BytesPerPixel = 4;
+
+static void RenderWeirdGradient(int XOffset, int YOffset)
+{
+    int Pitch = BitmapWidth*BytesPerPixel;
+    uint8 *Row = (uint8 *)BitmapMemory;
+    for (int Y = 0; Y < BitmapHeight; ++Y)
+    {
+        uint8 *Pixel = (uint8 *)Row;
+        for (int X = 0; X < BitmapWidth; ++X)
+        {
+            *Pixel = (uint8)X;
+            ++Pixel;
+            *Pixel = (uint8)Y;
+            ++Pixel;
+            *Pixel = (uint8)(255 - (uint8)Y);
+            ++Pixel;
+            *Pixel = 0;
+            ++Pixel;
+        }
+
+        Row += Pitch;
+    }
+}
 
 static void Win32ResizeDIBSection(int Width, int Height)
 {
@@ -38,29 +62,10 @@ static void Win32ResizeDIBSection(int Width, int Height)
     // BitmapInfo.bmiHeader.biYPelsPerMeter = 0;
     // BitmapInfo.bmiHeader.biClrUsed = 0;
     // BitmapInfo.bmiHeader.biClrImportant = 0;
-    int BytesPerPixel = 4;
     int BitmapMemorySize = Width * Height * BytesPerPixel;
     BitmapMemory = VirtualAlloc(0, BitmapMemorySize, MEM_COMMIT, PAGE_READWRITE);
 
-    int Pitch = Width*BytesPerPixel;
-    uint8 *Row = (uint8 *)BitmapMemory;
-    for (int Y = 0; Y < BitmapHeight; ++Y)
-    {
-        uint8 *Pixel = (uint8 *)Row;
-        for (int X = 0; X < BitmapWidth; ++X)
-        {
-            *Pixel = (uint8)X;
-            ++Pixel;
-            *Pixel = (uint8)Y;
-            ++Pixel;
-            *Pixel = (uint8)(255 - (uint8)Y);
-            ++Pixel;
-            *Pixel = 0;
-            ++Pixel;
-        }
-
-        Row += Pitch;
-    }
+    RenderWeirdGradient(128, 0); 
 }
 
 static void Win32UpdateWindow(HDC DeviceContext, RECT *WindowRect, int X, int Y, int Width, int Height)
