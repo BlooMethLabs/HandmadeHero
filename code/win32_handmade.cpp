@@ -21,7 +21,6 @@ struct win32_offscreen_buffer
     int Width;
     int Height;
     int Pitch;
-    int BytesPerPixel;
 };
 static win32_offscreen_buffer GlobalBackBuffer;
 
@@ -43,7 +42,7 @@ win32_window_dimension Win32GetWindowDimension(HWND Window)
     return Result;
 }
 
-static void RenderWeirdGradient(win32_offscreen_buffer Buffer, int XOffset, int YOffset)
+static void RenderWeirdGradient(win32_offscreen_buffer Buffer, uint8 XOffset, uint8 YOffset)
 {
     uint8 *Row = (uint8 *)Buffer.Memory;
     for (int Y = 0; Y < Buffer.Height; ++Y)
@@ -51,6 +50,9 @@ static void RenderWeirdGradient(win32_offscreen_buffer Buffer, int XOffset, int 
         uint32 *Pixel = (uint32 *)Row;
         for (int X = 0; X < Buffer.Width; ++X)
         {
+            // Spreads grandient across whole window
+            // uint8 Green = (( ((double)X) / Buffer.Width) * 256) + XOffset;
+            // uint8 Blue = (( ((double)Y) / Buffer.Height) * 256) + YOffset;
             uint8 Green = X + XOffset;
             uint8 Blue = Y + YOffset;
 
@@ -69,7 +71,7 @@ static void Win32ResizeDIBSection(win32_offscreen_buffer *Buffer, int Width, int
 
     Buffer->Width = Width;
     Buffer->Height = Height;
-    Buffer->BytesPerPixel = 4;
+    int BytesPerPixel = 4;
 
     Buffer->Info.bmiHeader.biSize = sizeof(Buffer->Info.bmiHeader);
     Buffer->Info.bmiHeader.biWidth = Buffer->Width;
@@ -82,12 +84,12 @@ static void Win32ResizeDIBSection(win32_offscreen_buffer *Buffer, int Width, int
     // BitmapInfo.bmiHeader.biYPelsPerMeter = 0;
     // BitmapInfo.bmiHeader.biClrUsed = 0;
     // BitmapInfo.bmiHeader.biClrImportant = 0;
-    int BitmapMemorySize = Width * Height * Buffer->BytesPerPixel;
+    int BitmapMemorySize = Width * Height * BytesPerPixel;
     Buffer->Memory = VirtualAlloc(0, BitmapMemorySize, MEM_COMMIT, PAGE_READWRITE);
 
     // TODO: Probably want to clear this to black
 
-    Buffer->Pitch = Width * Buffer->BytesPerPixel;
+    Buffer->Pitch = Width * BytesPerPixel;
 }
 
 static void Win32DisplayBufferInWindow(HDC DeviceContext, win32_offscreen_buffer Buffer, int X, int Y, int Width, int Height)
@@ -145,6 +147,7 @@ Win32MainWindowCallback(HWND Window,
 
             win32_window_dimension WindowDimension = Win32GetWindowDimension(Window);
             Win32DisplayBufferInWindow(DeviceContext, GlobalBackBuffer, X, Y, WindowDimension.Width, WindowDimension.Height);
+            EndPaint(Window, &Paint);
             // static DWORD Operation = WHITENESS;
             // Operation == WHITENESS ? Operation = BLACKNESS : Operation = WHITENESS;
             // PatBlt(DeviceContext, X, Y, Width, Height, Operation);
@@ -190,8 +193,8 @@ int CALLBACK WinMain(HINSTANCE Instance,
         if(Window)
         {
             Running = true;
-            int XOffset = 0;
-            int YOffset = 0;
+            uint8 XOffset = 0;
+            uint8 YOffset = 0;
             while (Running)
             {
                 MSG Message;
