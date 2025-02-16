@@ -1,5 +1,6 @@
 #include <windows.h>
 #include <stdint.h>
+#include <xinput.h>
 
 typedef uint8_t uint8;
 typedef uint16_t uint16;
@@ -13,6 +14,36 @@ typedef int64_t int64;
 
 // TODO: this is a global for now.
 static bool Running;
+
+// XInputGetState
+#define X_INPUT_GET_STATE(name) DWORD WINAPI name(DWORD dwUserIndex, XINPUT_STATE *pState)
+typedef X_INPUT_GET_STATE(x_input_get_state_func_type);
+X_INPUT_GET_STATE(XInputGetStateStub)
+{
+    return 0;
+}
+static x_input_get_state_func_type *XInputGetState_ = XInputGetStateStub;
+#define XInputGetState XInputGetState_
+
+// XInputSetState
+#define X_INPUT_SET_STATE(name) DWORD WINAPI name(DWORD dwUserIndex, XINPUT_VIBRATION *pVibration)
+typedef X_INPUT_SET_STATE(x_input_set_state_func_type);
+X_INPUT_SET_STATE(XInputSetStateStub)
+{
+    return 0;
+}
+static x_input_set_state_func_type *XInputSetState_ = XInputSetStateStub;
+#define XInputSetState XInputSetState_
+
+static void Win32LoadXInput(void)
+{
+    HMODULE XInputLibrary = LoadLibraryA("XInput1_3.dll");
+    if (XInputLibrary)
+    {
+        XInputGetState = (x_input_get_state_func_type *)GetProcAddress(XInputLibrary, "XInputGetState");
+        XInputSetState = (x_input_set_state_func_type *)GetProcAddress(XInputLibrary, "XInputSetState");
+    }
+}
 
 struct win32_offscreen_buffer
 {
@@ -30,7 +61,7 @@ struct win32_window_dimension
     int Height;
 };
 
-win32_window_dimension Win32GetWindowDimension(HWND Window)
+static win32_window_dimension Win32GetWindowDimension(HWND Window)
 {
     win32_window_dimension Result;
 
@@ -105,8 +136,7 @@ static void Win32DisplayBufferInWindow(HDC DeviceContext, win32_offscreen_buffer
                   SRCCOPY);
 }
 
-LRESULT CALLBACK
-Win32MainWindowCallback(HWND Window,
+static LRESULT CALLBACK Win32MainWindowCallback(HWND Window,
                    UINT Message,
                    WPARAM WParam,
                    LPARAM LParam)
@@ -132,6 +162,69 @@ Win32MainWindowCallback(HWND Window,
         {
             OutputDebugStringA("Activate app\n");
         } break;
+        case WM_SYSKEYDOWN:
+        case WM_SYSKEYUP:
+        case WM_KEYDOWN:
+        case WM_KEYUP:
+        {
+            uint32 VKCode = WParam;
+            bool WasDown = (LParam & (1 << 30)) != 0;
+            bool IsDown = (LParam & (1 << 31)) == 0;
+            switch(VKCode)
+            {
+                case 'W':
+                {
+                } break;
+                case 'A':
+                {
+                } break;
+                case 'S':
+                {
+                } break;
+                case 'D':
+                {
+                } break;
+                case 'Q':
+                {
+                } break;
+                case 'E':
+                {
+                } break;
+                case VK_SHIFT:
+                {
+                } break;
+                case VK_CONTROL:
+                {
+                } break;
+                case VK_ESCAPE:
+                {
+                    OutputDebugStringA("Esc: ");
+                    if (WasDown) OutputDebugStringA("WasDown ");
+                    if (IsDown) OutputDebugStringA("IsDown\n");
+                    OutputDebugStringA("\n");
+                } break;
+                case VK_SPACE:
+                {
+                } break;
+                case VK_LEFT:
+                {
+                } break;
+                case VK_RIGHT:
+                {
+                } break;
+                case VK_UP:
+                {
+                } break;
+                case VK_DOWN:
+                {
+                } break;
+                default:
+                {
+
+                }
+            }
+        } break;
+        Result = DefWindowProc(Window, Message, WParam, LParam);
         case WM_SETCURSOR:
         {
             SetCursor(0);
@@ -166,6 +259,7 @@ int CALLBACK WinMain(HINSTANCE Instance,
                      LPSTR CmdLine,
                      int ShowCode)
 {
+    Win32LoadXInput();
     WNDCLASSA WindowClass = {};
 
     Win32ResizeDIBSection(&GlobalBackBuffer, 1280, 720);
@@ -208,14 +302,52 @@ int CALLBACK WinMain(HINSTANCE Instance,
                     DispatchMessageA(&Message);
                 }
 
+                DWORD dwResult;    
+                for (DWORD ControllerIndex=0; ControllerIndex< XUSER_MAX_COUNT; ControllerIndex++ )
+                {
+                    XINPUT_STATE ControllerState;
+                    ZeroMemory( &ControllerState, sizeof(XINPUT_STATE) );
+
+                    dwResult = XInputGetState( ControllerIndex, &ControllerState );
+
+                    if( dwResult != ERROR_SUCCESS )
+                    {
+                        continue;
+                    }
+                    XINPUT_GAMEPAD *Pad = &ControllerState.Gamepad;
+                    bool Up = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_UP);
+                    bool Down = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_DOWN);
+                    bool Left = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_LEFT);
+                    bool Right = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_RIGHT);
+                    bool Start = (Pad->wButtons & XINPUT_GAMEPAD_START);
+                    bool Back = (Pad->wButtons & XINPUT_GAMEPAD_BACK);
+                    bool LeftShoulder = (Pad->wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER);
+                    bool RightShoulder = (Pad->wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER);
+                    bool AButton = (Pad->wButtons & XINPUT_GAMEPAD_A);
+                    bool BButton = (Pad->wButtons & XINPUT_GAMEPAD_B);
+                    bool XButton = (Pad->wButtons & XINPUT_GAMEPAD_X);
+                    bool YButton = (Pad->wButtons & XINPUT_GAMEPAD_Y);
+
+                    int16 LStickX = Pad->sThumbLX;
+                    int16 LStickY = Pad->sThumbLY;
+                    int16 RStickX = Pad->sThumbRX;
+                    int16 RStickY = Pad->sThumbRY;
+                    ++XOffset;
+                    if (AButton)
+                        ++YOffset;
+                }
+
+                // XINPUT_VIBRATION Vibration;
+                // Vibration.wLeftMotorSpeed = 60000;
+                // Vibration.wRightMotorSpeed = 6000;
+                // XInputSetState(0, &Vibration);
+
                 RenderWeirdGradient(GlobalBackBuffer, XOffset, YOffset);
 
                 HDC DeviceContext = GetDC(Window);
                 win32_window_dimension WindowDimension = Win32GetWindowDimension(Window);
                 Win32DisplayBufferInWindow(DeviceContext, GlobalBackBuffer, 0, 0, WindowDimension.Width, WindowDimension.Height);
                 ReleaseDC(Window, DeviceContext);
-
-                ++XOffset;
             }
         }
         else
