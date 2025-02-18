@@ -468,59 +468,64 @@ int CALLBACK WinMain(HINSTANCE Instance,
                 // Sound Test
                 DWORD PlayCursor;
                 DWORD WriteCursor;
-                if (FAILED(SecondaryBuffer->GetCurrentPosition(&PlayCursor, &WriteCursor)))
+                if (SUCCEEDED(SecondaryBuffer->GetCurrentPosition(&PlayCursor, &WriteCursor)))
+                {
+                    DWORD ByteToLock = RunningSampleIndex * BytesPerSample % SecondaryBufferSize;
+                    DWORD BytesToWrite;
+                    if (ByteToLock == PlayCursor)
+                    {
+                        BytesToWrite = SecondaryBufferSize;
+                    }
+                    else if (ByteToLock > PlayCursor)
+                    {
+                        BytesToWrite = (SecondaryBufferSize - ByteToLock);
+                        BytesToWrite += PlayCursor;
+                    }
+                    else
+                    {
+                        BytesToWrite = PlayCursor - ByteToLock;
+                    }
+
+                    VOID *Region1;
+                    DWORD Region1Size;
+                    VOID *Region2;
+                    DWORD Region2Size;
+
+                    // DWORD BytesToLock = RunningSampleIndex * BytesPerSample % BufferSize;
+
+                    if (SUCCEEDED(SecondaryBuffer->Lock(ByteToLock, BytesToWrite,
+                                                        &Region1, &Region1Size,
+                                                        &Region2, &Region2Size,
+                                                        0)))
+                    {
+                        DWORD Region1SampleCount = Region1Size / BytesPerSample;
+                        int16 *SampleOut = (int16 *)Region1;
+                        for (DWORD SampleIndex = 0; SampleIndex < Region1SampleCount; ++SampleIndex)
+                        {
+                            int16 SampleValue = ((RunningSampleIndex++ / HalfSquareWavePeriod) % 2) ? ToneVolume : -ToneVolume;
+                            *SampleOut++ = SampleValue;
+                            *SampleOut++ = SampleValue;
+                        }
+
+                        DWORD Region2SampleCount = Region2Size / BytesPerSample;
+                        SampleOut = (int16 *)Region2;
+                        for (DWORD SampleIndex = 0; SampleIndex < Region2SampleCount; ++SampleIndex)
+                        {
+                            int16 SampleValue = ((RunningSampleIndex++ / HalfSquareWavePeriod) % 2) ? ToneVolume : -ToneVolume;
+                            *SampleOut++ = SampleValue;
+                            *SampleOut++ = SampleValue;
+                        }
+
+                        SecondaryBuffer->Unlock(Region1, Region1Size, Region2, Region2Size);
+                    }
+                    else
+                    {
+                        OutputDebugStringA("Failed to lock secondary buffer.");
+                    }
+                }
+                else
                 {
                     OutputDebugStringA("Failed to get current position of secondary buffer.");
-                    return 1;
-                }
-                DWORD ByteToLock = RunningSampleIndex * BytesPerSample % SecondaryBufferSize;
-                DWORD BytesToWrite;
-                if (ByteToLock > PlayCursor)
-                {
-                    BytesToWrite = (SecondaryBufferSize - ByteToLock);
-                    BytesToWrite += PlayCursor;
-                }
-                else
-                {
-                    BytesToWrite = PlayCursor - ByteToLock;
-                }
-
-                VOID *Region1;
-                DWORD Region1Size;
-                VOID *Region2;
-                DWORD Region2Size;
-
-                // DWORD BytesToLock = RunningSampleIndex * BytesPerSample % BufferSize;
-
-                if (SUCCEEDED(SecondaryBuffer->Lock(ByteToLock, BytesToWrite,
-                                                    &Region1, &Region1Size,
-                                                    &Region2, &Region2Size,
-                                                    0)))
-                {
-                    DWORD Region1SampleCount = Region1Size / BytesPerSample;
-                    int16 *SampleOut = (int16 *)Region1;
-                    for (DWORD SampleIndex = 0; SampleIndex < Region1SampleCount; ++SampleIndex)
-                    {
-                        int16 SampleValue = ((RunningSampleIndex++ / HalfSquareWavePeriod) % 2) ? ToneVolume : -ToneVolume;
-                        *SampleOut++ = SampleValue;
-                        *SampleOut++ = SampleValue;
-                    }
-
-                    DWORD Region2SampleCount = Region2Size / BytesPerSample;
-                    SampleOut = (int16 *)Region2;
-                    for (DWORD SampleIndex = 0; SampleIndex < Region2SampleCount; ++SampleIndex)
-                    {
-                        int16 SampleValue = ((RunningSampleIndex++ / HalfSquareWavePeriod) % 2) ? ToneVolume : -ToneVolume;
-                        *SampleOut++ = SampleValue;
-                        *SampleOut++ = SampleValue;
-                    }
-
-                    SecondaryBuffer->Unlock(Region1, Region1Size, Region2, Region2Size);
-                }
-                else
-                {
-                    OutputDebugStringA("Failed to lock secondary buffer.");
-                    // return 0;
                 }
 
                 HDC DeviceContext = GetDC(Window);
