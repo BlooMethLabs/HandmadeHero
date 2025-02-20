@@ -13,6 +13,7 @@ typedef int8_t int8;
 typedef int16_t int16;
 typedef int32_t int32;
 typedef int64_t int64;
+typedef int32_t bool32;
 
 // Syntax errors for these:
 typedef float real32;
@@ -37,7 +38,7 @@ struct win32_window_dimension
     int Height;
 };
 
-static bool Running;
+static bool32 Running;
 static win32_offscreen_buffer GlobalBackBuffer;
 static LPDIRECTSOUNDBUFFER SecondaryBuffer;
 
@@ -72,6 +73,10 @@ typedef HRESULT WINAPI direct_sound_create_func_type(LPCGUID pcGuidDevice,
 static void Win32LoadXInput(void)
 {
     HMODULE XInputLibrary = LoadLibraryA("XInput1_4.dll");
+    if (!XInputLibrary)
+    {
+        XInputLibrary = LoadLibraryA("XInput9_1_0.dll");
+    }
     if (!XInputLibrary)
     {
         XInputLibrary = LoadLibraryA("XInput1_3.dll");
@@ -280,9 +285,9 @@ static LRESULT CALLBACK Win32MainWindowCallback(HWND Window,
             uint32 VKCode = WParam;
             // Bit 30 indicates if the key was down before this message was sent.
             // 0=Key has just been pressed down. 1=Key was already down.
-            bool WasDown = (LParam & (1 << 30)) != 0;
-            bool IsDown = (LParam & (1 << 31)) == 0; // Bit 31 indicates if the key is down. 1=Down, 0=UP
-            bool IsAlt = (LParam & (1 << 29)) != 0;
+            bool32 WasDown = (LParam & (1 << 30)) != 0;
+            bool32 IsDown = (LParam & (1 << 31)) == 0; // Bit 31 indicates if the key is down. 1=Down, 0=UP
+            bool32 IsAlt = (LParam & (1 << 29)) != 0;
             if (WasDown == IsDown)
             {
                 break;
@@ -495,32 +500,26 @@ int CALLBACK WinMain(HINSTANCE Instance,
                     if (Result == ERROR_SUCCESS)
                     {
                         XINPUT_GAMEPAD *Pad = &ControllerState.Gamepad;
-                        bool Up = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_UP);
-                        bool Down = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_DOWN);
-                        bool Left = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_LEFT);
-                        bool Right = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_RIGHT);
-                        bool Start = (Pad->wButtons & XINPUT_GAMEPAD_START);
-                        bool Back = (Pad->wButtons & XINPUT_GAMEPAD_BACK);
-                        bool LeftShoulder = (Pad->wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER);
-                        bool RightShoulder = (Pad->wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER);
-                        bool AButton = (Pad->wButtons & XINPUT_GAMEPAD_A);
-                        bool BButton = (Pad->wButtons & XINPUT_GAMEPAD_B);
-                        bool XButton = (Pad->wButtons & XINPUT_GAMEPAD_X);
-                        bool YButton = (Pad->wButtons & XINPUT_GAMEPAD_Y);
+                        bool32 Up = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_UP);
+                        bool32 Down = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_DOWN);
+                        bool32 Left = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_LEFT);
+                        bool32 Right = (Pad->wButtons & XINPUT_GAMEPAD_DPAD_RIGHT);
+                        bool32 Start = (Pad->wButtons & XINPUT_GAMEPAD_START);
+                        bool32 Back = (Pad->wButtons & XINPUT_GAMEPAD_BACK);
+                        bool32 LeftShoulder = (Pad->wButtons & XINPUT_GAMEPAD_LEFT_SHOULDER);
+                        bool32 RightShoulder = (Pad->wButtons & XINPUT_GAMEPAD_RIGHT_SHOULDER);
+                        bool32 AButton = (Pad->wButtons & XINPUT_GAMEPAD_A);
+                        bool32 BButton = (Pad->wButtons & XINPUT_GAMEPAD_B);
+                        bool32 XButton = (Pad->wButtons & XINPUT_GAMEPAD_X);
+                        bool32 YButton = (Pad->wButtons & XINPUT_GAMEPAD_Y);
 
                         int16 LStickX = Pad->sThumbLX;
                         int16 LStickY = Pad->sThumbLY;
                         int16 RStickX = Pad->sThumbRX;
                         int16 RStickY = Pad->sThumbRY;
-                        ++XOffset;
-                        if (AButton)
-                        {
-                            ++YOffset;
-                            // Bad way of changing the pitch because reasons
-                            // SoundOutput.ToneHz = 512;
-                            // SoundOutput.WavePeriod = SoundOutput.SamplesPerSecond/SoundOutput.ToneHz;
-                        }
 
+                        XOffset += LStickX / 2048;
+                        YOffset += LStickY / 2048;
                         SoundOutput.ToneHz = 512 + (int)(256.0f * ((real32)LStickY / 30000.0f));
                         SoundOutput.WavePeriod = SoundOutput.SamplesPerSecond / SoundOutput.ToneHz;
                     }
