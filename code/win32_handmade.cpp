@@ -1,9 +1,6 @@
-#include <windows.h>
 #include <stdint.h>
-#include <stdio.h>
-#include <xinput.h>
-#include <dsound.h>
-#include <math.h>
+
+#define Pi32 3.1415926535f
 
 typedef uint8_t uint8;
 typedef uint16_t uint16;
@@ -20,7 +17,14 @@ typedef int32_t bool32;
 typedef float real32;
 typedef double real64;
 
-#define Pi32 3.1415926535f
+#include "handmade.h"
+#include "handmade.cpp"
+
+#include <windows.h>
+#include <stdio.h>
+#include <xinput.h>
+#include <dsound.h>
+#include <math.h>
 
 // TODO: this is a global for now.
 
@@ -70,6 +74,12 @@ static x_input_set_state_func_type *XInputSetState_ = XInputSetStateStub;
 typedef HRESULT WINAPI direct_sound_create_func_type(LPCGUID pcGuidDevice,
                                                      LPDIRECTSOUND *ppDS,
                                                      LPUNKNOWN pUnkOuter);
+
+void * PlatformLoadFile(char *FileName)
+{
+    // NOTE(casey): Implements the Win32 file loading
+    return(0);
+}
 
 static void Win32LoadXInput(void)
 {
@@ -187,26 +197,6 @@ static win32_window_dimension Win32GetWindowDimension(HWND Window)
     Result.Height = ClientRect.bottom - ClientRect.top;
 
     return Result;
-}
-
-static void RenderWeirdGradient(win32_offscreen_buffer *Buffer, uint8 XOffset, uint8 YOffset)
-{
-    uint8 *Row = (uint8 *)Buffer->Memory;
-    for (int Y = 0; Y < Buffer->Height; ++Y)
-    {
-        uint32 *Pixel = (uint32 *)Row;
-        for (int X = 0; X < Buffer->Width; ++X)
-        {
-            // Spreads grandient across whole window
-            // uint8 Green = (( ((double)X) / Buffer.Width) * 256) + XOffset;
-            // uint8 Blue = (( ((double)Y) / Buffer.Height) * 256) + YOffset;
-            uint8 Green = X + XOffset;
-            uint8 Blue = Y + YOffset;
-
-            *Pixel++ = ((Green << 8) | Blue);
-        }
-        Row += Buffer->Pitch;
-    }
 }
 
 static void Win32ResizeDIBSection(win32_offscreen_buffer *Buffer, int Width, int Height)
@@ -539,7 +529,12 @@ int CALLBACK WinMain(HINSTANCE Instance,
                 // Vibration.wRightMotorSpeed = 6000;
                 // XInputSetState(0, &Vibration);
 
-                RenderWeirdGradient(&GlobalBackBuffer, XOffset, YOffset);
+                game_offscreen_buffer Buffer = {};
+                Buffer.Memory = GlobalBackBuffer.Memory;
+                Buffer.Width = GlobalBackBuffer.Width;
+                Buffer.Height = GlobalBackBuffer.Height;
+                Buffer.Pitch = GlobalBackBuffer.Pitch;
+                GameUpdateAndRender(&Buffer, XOffset, YOffset);
 
                 // Sound Test
                 DWORD PlayCursor;
