@@ -17,7 +17,7 @@ typedef int32_t bool32;
 typedef float real32;
 typedef double real64;
 
-#include "handmade.h"
+// #include "handmade.h"
 #include "handmade.cpp"
 
 #include <windows.h>
