@@ -20,7 +20,37 @@ static void RenderWeirdGradient(game_offscreen_buffer *Buffer, int BlueOffset, i
     }
 }
 
-static void GameUpdateAndRender(game_offscreen_buffer *Buffer, int BlueOffset, int GreenOffset)
+static void GameOutputSound(game_sound_output_buffer *SoundBuffer, int ToneHz)
 {
+    static real32 tSine;
+    int16 ToneVolume = 3000;
+    int WavePeriod = SoundBuffer->SamplesPerSecond/ToneHz;
+
+    int16 *SampleOut = SoundBuffer->Samples;
+    for (int SampleIndex = 0; SampleIndex < SoundBuffer->SampleCount; ++SampleIndex)
+    {
+        // real32 t = 2.0f * Pi32 * (real32)SoundOutput->RunningSampleIndex / (real32)SoundOutput->WavePeriod;
+        real32 SineValue = sinf(tSine);
+        /*
+        char SineString[256];
+        sprintf(SineString, "%.5f\n", SineValue);
+        OutputDebugStringA(SineString);
+        */
+        int16 SampleValue = (int16)(SineValue * ToneVolume);
+        *SampleOut++ = SampleValue;
+        *SampleOut++ = SampleValue;
+
+        // SoundOutput->tSine += 2.0f * Pi32 * 1.0f / (real32)SoundOutput->WavePeriod;
+        tSine += 2.0f * Pi32 * 1.0f / (real32)WavePeriod;
+    }
+}
+
+static void GameUpdateAndRender(game_offscreen_buffer *Buffer,
+                                int BlueOffset,
+                                int GreenOffset,
+                                game_sound_output_buffer *SoundBuffer,
+                                int ToneHz)
+{
+    GameOutputSound(SoundBuffer, ToneHz);
     RenderWeirdGradient(Buffer, BlueOffset, GreenOffset);
 }
