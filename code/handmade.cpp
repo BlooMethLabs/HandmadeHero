@@ -1,6 +1,6 @@
 #include "handmade.h"
 
-static void RenderWeirdGradient(game_offscreen_buffer *Buffer, int BlueOffset, int GreenOffset)
+internal void RenderWeirdGradient(game_offscreen_buffer *Buffer, int BlueOffset, int GreenOffset)
 {
     uint8 *Row = (uint8 *)Buffer->Memory;
     for (int Y = 0; Y < Buffer->Height; ++Y)
@@ -20,9 +20,9 @@ static void RenderWeirdGradient(game_offscreen_buffer *Buffer, int BlueOffset, i
     }
 }
 
-static void GameOutputSound(game_sound_output_buffer *SoundBuffer, int ToneHz)
+internal void GameOutputSound(game_sound_output_buffer *SoundBuffer, int ToneHz)
 {
-    static real32 tSine;
+    local_persist real32 tSine;
     int16 ToneVolume = 3000;
     int WavePeriod = SoundBuffer->SamplesPerSecond/ToneHz;
 
@@ -45,10 +45,10 @@ static void GameOutputSound(game_sound_output_buffer *SoundBuffer, int ToneHz)
     }
 }
 
-static void GameUpdateAndRender(game_memory *Memory,
-                                game_input *Input,
-                                game_offscreen_buffer *Buffer,
-                                game_sound_output_buffer *SoundBuffer)
+internal void GameUpdateAndRender(game_memory *Memory,
+                                  game_input *Input,
+                                  game_offscreen_buffer *Buffer,
+                                  game_sound_output_buffer *SoundBuffer)
 {
     Assert((&Input->Controllers[0].Terminator - &Input->Controllers[0].Buttons[0]) ==
            (ArrayCount(Input->Controllers[0].Buttons)));
@@ -78,7 +78,7 @@ static void GameUpdateAndRender(game_memory *Memory,
         game_controller_input *Controller = GetController(Input, ControllerIndex);
         if (Controller->IsAnalog)
         {
-            GameState->BlueOffset -= (int)(4.0f * (Controller->StickAverageX));
+            GameState->BlueOffset += (int)(4.0f * (Controller->StickAverageX));
             GameState->GreenOffset += (int)(4.0f * (Controller->StickAverageY));
             GameState->ToneHz = 256 + (int)(128.0f * (Controller->StickAverageY));
         }
@@ -86,11 +86,11 @@ static void GameUpdateAndRender(game_memory *Memory,
         {
             if (Controller->MoveLeft.EndedDown)
             {
-                GameState->BlueOffset +=1;
+                GameState->BlueOffset -=1;
             }
             if (Controller->MoveRight.EndedDown)
             {
-                GameState->BlueOffset -=1;
+                GameState->BlueOffset +=1;
             }
             if (Controller->MoveUp.EndedDown)
             {

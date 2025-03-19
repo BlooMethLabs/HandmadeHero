@@ -17,15 +17,12 @@ struct win32_window_dimension
 struct win32_sound_output
 {
     int SamplesPerSecond;
-    int ToneHz;
-    int16 ToneVolume;
     uint32 RunningSampleIndex;
-    int WavePeriod;
     int BytesPerSample;
     int SecondaryBufferSize;
     real32 tSine;
     int LatencySampleCount;
 };
 
-#define HANDMADE_H
+#define WIN32_HANDMADE_H
 #endif
