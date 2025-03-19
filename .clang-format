@@ -104,7 +104,7 @@ PenaltyBreakString: 1000
 
 PenaltyExcessCharacter: 1000000
 PenaltyReturnTypeOnItsOwnLine: 60
-PointerAlignment: Left
+PointerAlignment: Right
 SpaceAfterCStyleCast: false
 SpaceBeforeAssignmentOperators: true
 SpaceBeforeParens: Never
@@ -125,4 +125,4 @@ SortIncludes: true
 ReflowComments: false
 
 IncludeBlocks: Preserve
-IndentPPDirectives: AfterHash
+# IndentPPDirectives: AfterHash
