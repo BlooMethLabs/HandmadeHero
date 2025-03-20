@@ -44,7 +44,7 @@ internal void RenderWeirdGradient(game_offscreen_buffer *Buffer, int BlueOffset,
 			uint8 Blue = (uint8)(X + BlueOffset);
 			uint8 Green = (uint8)(Y + GreenOffset);
 
-			*Pixel++ = ((Green << 8) | Blue);
+			*Pixel++ = ((Green << 16) | Blue);
 		}
 
 		Row += Buffer->Pitch;
@@ -124,11 +124,3 @@ extern "C" GAME_GET_SOUND_SAMPLES(GameGetSoundSamples)
 	game_state *GameState = (game_state *)Memory->PermanentStorage;
 	GameOutputSound(GameState, SoundBuffer, GameState->ToneHz);
 }
-
-#if HANDMADE_WIN32
-#include "windows.h"
-BOOL WINAPI DllMain(_In_ HINSTANCE hinstDLL, _In_ DWORD fdwReason, _In_ LPVOID lpvReserved)
-{
-	return TRUE;
-}
-#endif
