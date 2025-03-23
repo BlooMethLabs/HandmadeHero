@@ -46,7 +46,7 @@ typedef double real64;
 #if HANDMADE_SLOW
 // TODO(casey): Complete assertion macro - don't worry everyone!
 #define Assert(Expression)                                                                         \
-	if(!(Expression))                                                                              \
+	if (!(Expression))                                                                             \
 	{                                                                                              \
 		*(int *)0 = 0;                                                                             \
 	}

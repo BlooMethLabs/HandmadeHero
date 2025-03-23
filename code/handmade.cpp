@@ -15,7 +15,7 @@ GameOutputSound(game_state *GameState, game_sound_output_buffer *SoundBuffer, in
 	int WavePeriod = SoundBuffer->SamplesPerSecond / ToneHz;
 
 	int16 *SampleOut = SoundBuffer->Samples;
-	for(int SampleIndex = 0; SampleIndex < SoundBuffer->SampleCount; ++SampleIndex)
+	for (int SampleIndex = 0; SampleIndex < SoundBuffer->SampleCount; ++SampleIndex)
 	{
 		// TODO(casey): Draw this out for people
 #if 1
@@ -28,7 +28,7 @@ GameOutputSound(game_state *GameState, game_sound_output_buffer *SoundBuffer, in
 		*SampleOut++ = SampleValue;
 
 		GameState->tSine += 2.0f * Pi32 * 1.0f / (real32)WavePeriod;
-		if(GameState->tSine > 2.0f * Pi32)
+		if (GameState->tSine > 2.0f * Pi32)
 		{
 			GameState->tSine -= 2.0f * Pi32;
 		}
@@ -40,10 +40,10 @@ internal void RenderWeirdGradient(game_offscreen_buffer *Buffer, int BlueOffset,
 	// TODO(casey): Let's see what the optimizer does
 
 	uint8 *Row = (uint8 *)Buffer->Memory;
-	for(int Y = 0; Y < Buffer->Height; ++Y)
+	for (int Y = 0; Y < Buffer->Height; ++Y)
 	{
 		uint32 *Pixel = (uint32 *)Row;
-		for(int X = 0; X < Buffer->Width; ++X)
+		for (int X = 0; X < Buffer->Width; ++X)
 		{
 			uint8 Blue = (uint8)(X + BlueOffset);
 			uint8 Green = (uint8)(Y + GreenOffset);
@@ -62,12 +62,12 @@ internal void RenderPlayer(game_offscreen_buffer *Buffer, int PlayerX, int Playe
 	uint32 Color = 0xFFFFFFFF;
 	int Top = PlayerY;
 	int Bottom = PlayerY + 10;
-	for(int X = PlayerX; X < PlayerX + 10; ++X)
+	for (int X = PlayerX; X < PlayerX + 10; ++X)
 	{
 		uint8 *Pixel = ((uint8 *)Buffer->Memory + X * Buffer->BytesPerPixel + Top * Buffer->Pitch);
-		for(int Y = Top; Y < Bottom; ++Y)
+		for (int Y = Top; Y < Bottom; ++Y)
 		{
-			if((Pixel >= Buffer->Memory) && ((Pixel + 4) <= EndOfBuffer))
+			if ((Pixel >= Buffer->Memory) && ((Pixel + 4) <= EndOfBuffer))
 			{
 				*(uint32 *)Pixel = Color;
 			}
@@ -84,12 +84,12 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	Assert(sizeof(game_state) <= Memory->PermanentStorageSize);
 
 	game_state *GameState = (game_state *)Memory->PermanentStorage;
-	if(!Memory->IsInitialized)
+	if (!Memory->IsInitialized)
 	{
 		char *Filename = __FILE__;
 
 		debug_read_file_result File = Memory->DEBUGPlatformReadEntireFile(Thread, Filename);
-		if(File.Contents)
+		if (File.Contents)
 		{
 			Memory->DEBUGPlatformWriteEntireFile(
 				Thread, "test.out", File.ContentsSize, File.Contents);
@@ -106,11 +106,11 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		Memory->IsInitialized = true;
 	}
 
-	for(int ControllerIndex = 0; ControllerIndex < ArrayCount(Input->Controllers);
-		++ControllerIndex)
+	for (int ControllerIndex = 0; ControllerIndex < ArrayCount(Input->Controllers);
+		 ++ControllerIndex)
 	{
 		game_controller_input *Controller = GetController(Input, ControllerIndex);
-		if(Controller->IsAnalog)
+		if (Controller->IsAnalog)
 		{
 			// NOTE(casey): Use analog movement tuning
 			GameState->BlueOffset += (int)(4.0f * Controller->StickAverageX);
@@ -120,19 +120,19 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		else
 		{
 			// NOTE(casey): Use digital movement tuning
-			if(Controller->MoveLeft.EndedDown)
+			if (Controller->MoveLeft.EndedDown)
 			{
 				GameState->BlueOffset -= 1;
 			}
-			if(Controller->MoveRight.EndedDown)
+			if (Controller->MoveRight.EndedDown)
 			{
 				GameState->BlueOffset += 1;
 			}
-			if(Controller->MoveUp.EndedDown)
+			if (Controller->MoveUp.EndedDown)
 			{
 				GameState->GreenOffset += 1;
 			}
-			if(Controller->MoveDown.EndedDown)
+			if (Controller->MoveDown.EndedDown)
 			{
 				GameState->GreenOffset -= 1;
 			}
@@ -147,7 +147,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		{
 			GameState->PlayerY += (int)(5.0f * sinf(0.5f * Pi32 * GameState->tJump));
 		}
-		if(Controller->ActionDown.EndedDown)
+		if (Controller->ActionDown.EndedDown)
 		{
 			GameState->GreenOffset += 1;
 			GameState->tJump = 4.0;
