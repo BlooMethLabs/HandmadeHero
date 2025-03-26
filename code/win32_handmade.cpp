@@ -436,15 +436,17 @@ internal void Win32DisplayBufferInWindow(win32_offscreen_buffer *Buffer,
 										 int WindowWidth,
 										 int WindowHeight)
 {
-	// TODO(casey): Aspect ratio correction
-	// TODO(casey): Play with stretch modes
+	int OffsetX = 10;
+	int OffsetY = 10;
+
+	PatBlt(DeviceContext, 0, 0, WindowWidth, OffsetY, BLACKNESS);
+	PatBlt(DeviceContext, 0, OffsetY + Buffer->Height, WindowWidth, WindowHeight, BLACKNESS);
+	PatBlt(DeviceContext, 0, 0, OffsetX, WindowHeight, BLACKNESS);
+	PatBlt(DeviceContext, OffsetX + Buffer->Width, 0, WindowWidth, WindowHeight, BLACKNESS);
+
 	StretchDIBits(DeviceContext,
-				  /*
-                  X, Y, Width, Height,
-                  X, Y, Width, Height,
-                  */
-				  0,
-				  0,
+				  OffsetX,
+				  OffsetY,
 				  Buffer->Width,
 				  Buffer->Height,
 				  0,
@@ -1594,7 +1596,7 @@ int CALLBACK WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CommandLi
 						OldInput = Temp;
 						// TODO(casey): Should I clear these here?
 
-#if 0
+#if 1
 						uint64 EndCycleCount = __rdtsc();
 						uint64 CyclesElapsed = EndCycleCount - LastCycleCount;
 						LastCycleCount = EndCycleCount;
