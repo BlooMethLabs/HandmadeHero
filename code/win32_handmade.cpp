@@ -1154,7 +1154,8 @@ int CALLBACK WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CommandLi
 				ReplayBuffer->MemoryBlock = MapViewOfFile(
 					ReplayBuffer->MemoryMap, FILE_MAP_ALL_ACCESS, 0, 0, Win32State.TotalSize);
 				if (ReplayBuffer->MemoryBlock)
-				{ }
+				{
+				}
 				else
 				{
 					// TODO(casey): Diagnostic
@@ -1535,8 +1536,8 @@ int CALLBACK WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CommandLi
 						{
 							if (SleepIsGranular)
 							{
-								DWORD SleepMS = (DWORD)(
-									1000.0f * (TargetSecondsPerFrame - SecondsElapsedForFrame));
+								DWORD SleepMS = (DWORD)(1000.0f * (TargetSecondsPerFrame -
+																   SecondsElapsedForFrame));
 								if (SleepMS > 0)
 								{
 									Sleep(SleepMS);
