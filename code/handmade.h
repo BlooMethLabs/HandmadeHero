@@ -104,7 +104,9 @@ struct game_state
 	real32 PlayerX;
 	real32 PlayerY;
 	
-	bool32 Movable;
+	// bool32 Movable;
+	real32 DistanceToMoveX;
+	real32 DistanceToMoveY;
 };
 
 #define HANDMADE_H

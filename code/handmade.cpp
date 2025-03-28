@@ -358,7 +358,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		GameState->PlayerX = PlayerPos.TileX*World.TileWidth + World.TileWidth/2;
 		GameState->PlayerY = PlayerPos.TileY*World.TileHeight + World.TileHeight/2;
 
-		GameState->Movable = true;
+		// GameState->Movable = true;
 
 		Memory->IsInitialized = true;
 	}
@@ -374,7 +374,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		 ++ControllerIndex)
 	{
 		game_controller_input *Controller = GetController(Input, ControllerIndex);
-		if (GameState->Movable)
+		if (!GameState->DistanceToMoveX && !GameState->DistanceToMoveY)
 		{
 			if (Controller->IsAnalog)
 			{
@@ -412,12 +412,56 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 					PlayerPos.TileY = TestPos.TileY;
 					GameState->PlayerTileMapX = PlayerPos.TileMapX;
 					GameState->PlayerTileMapY = PlayerPos.TileMapY;
-					GameState->PlayerX = PlayerPos.TileX*World.TileWidth + World.TileWidth/2;
-					GameState->PlayerY = PlayerPos.TileY*World.TileHeight + World.TileHeight/2;
+					GameState->DistanceToMoveX = dPlayerX * World.TileWidth;
+					if (!dPlayerX)
+					{
+						GameState->DistanceToMoveY = dPlayerY * World.TileHeight;
+					}
 					// GameState->Movable = false;
 				}
 			}
 		}
+	}
+#define PLAYER_MOVEMENT 60.0f
+	if (GameState->DistanceToMoveX < 0)
+	{
+		real32 MovementForFrame = PLAYER_MOVEMENT*Input->dtForFrame;
+		if (MovementForFrame > -GameState->DistanceToMoveX)
+		{
+			MovementForFrame = -GameState->DistanceToMoveX;
+		}
+		GameState->PlayerX -= MovementForFrame;
+		GameState->DistanceToMoveX += MovementForFrame;
+	}
+	else if (GameState->DistanceToMoveX > 0)
+	{
+		real32 MovementForFrame = PLAYER_MOVEMENT*Input->dtForFrame;
+		if (MovementForFrame > GameState->DistanceToMoveX)
+		{
+			MovementForFrame = GameState->DistanceToMoveX;
+		}
+		GameState->PlayerX += MovementForFrame;
+		GameState->DistanceToMoveX -= MovementForFrame;
+	}
+	else if (GameState->DistanceToMoveY < 0)
+	{
+		real32 MovementForFrame = PLAYER_MOVEMENT*Input->dtForFrame;
+		if (MovementForFrame > -GameState->DistanceToMoveY)
+		{
+			MovementForFrame = -GameState->DistanceToMoveY;
+		}
+		GameState->PlayerY -= MovementForFrame;
+		GameState->DistanceToMoveY += MovementForFrame;
+	}
+	if (GameState->DistanceToMoveY > 0)
+	{
+		real32 MovementForFrame = PLAYER_MOVEMENT*Input->dtForFrame;
+		if (MovementForFrame > GameState->DistanceToMoveY)
+		{
+			MovementForFrame = GameState->DistanceToMoveY;
+		}
+		GameState->PlayerY += MovementForFrame;
+		GameState->DistanceToMoveY -= MovementForFrame;
 	}
 
 	DrawRectangle(
