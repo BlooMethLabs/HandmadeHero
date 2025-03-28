@@ -66,29 +66,13 @@ inline game_controller_input *GetController(game_input *Input, int unsigned Cont
 //
 //
 
-struct canonical_position
+struct position
 {
 	int32 TileMapX;
 	int32 TileMapY;
 
 	int32 TileX;
 	int32 TileY;
-
-	// NOTE(casey): This is tile-relative X and Y
-	// TODO(casey): These are still in pixels... :/
-	real32 TileRelX;
-	real32 TileRelY;
-};
-
-// TODO(casey): Is this ever necessary?
-struct raw_position
-{
-	int32 TileMapX;
-	int32 TileMapY;
-
-	// NOTE(casey): Tile-map relative X and Y
-	real32 X;
-	real32 Y;
 };
 
 struct tile_map
@@ -119,6 +103,8 @@ struct game_state
 
 	real32 PlayerX;
 	real32 PlayerY;
+	
+	bool32 Movable;
 };
 
 #define HANDMADE_H
