@@ -204,31 +204,7 @@ internal position GetWorldPosition(world *World, position Pos, int32 DirectionX,
 {
 	position Result = Pos;
 
-	if (DirectionY < 0) // Moving up
-	{
-		if (Result.TileY == 0)
-		{
-			Result.TileY = World->CountY - 1;
-			--Result.TileMapY;
-		}
-		else
-		{
-			--Result.TileY;
-		}
-	}
-	else if (DirectionY > 0) // Moving down
-	{
-		if (Result.TileY == World->CountY - 1)
-		{
-			Result.TileY = 0;
-			++Result.TileMapY;
-		}
-		else
-		{
-			++Result.TileY;
-		}
-	}
-	else if (DirectionX < 0) // Moving left
+	if (DirectionX < 0) // Moving left
 	{
 		if (Result.TileX == 0)
 		{
@@ -252,6 +228,30 @@ internal position GetWorldPosition(world *World, position Pos, int32 DirectionX,
 			++Result.TileX;
 		}
 	}
+	else if (DirectionY < 0) // Moving up
+	{
+		if (Result.TileY == 0)
+		{
+			Result.TileY = World->CountY - 1;
+			--Result.TileMapY;
+		}
+		else
+		{
+			--Result.TileY;
+		}
+	}
+	else if (DirectionY > 0) // Moving down
+	{
+		if (Result.TileY == World->CountY - 1)
+		{
+			Result.TileY = 0;
+			++Result.TileMapY;
+		}
+		else
+		{
+			++Result.TileY;
+		}
+	}
 
 	return Result;
 }
@@ -273,6 +273,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		   (ArrayCount(Input->Controllers[0].Buttons)));
 	Assert(sizeof(game_state) <= Memory->PermanentStorageSize);
 
+	// Create tile maps (Should we do this every frame? Could this be static or in memory?)
 #define TILE_MAP_COUNT_X 16
 #define TILE_MAP_COUNT_Y 9
 	uint32 Tiles00[TILE_MAP_COUNT_Y][TILE_MAP_COUNT_X] = {
@@ -330,6 +331,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	TileMaps[1][0].Tiles = (uint32 *)Tiles01;
 	TileMaps[1][1].Tiles = (uint32 *)Tiles11;
 
+	// Init world
 	world World;
 	World.TileMapCountX = 2;
 	World.TileMapCountY = 2;
@@ -339,13 +341,10 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	World.UpperLeftY = 0;
 	World.TileWidth = 60;
 	World.TileHeight = 60;
-
-	real32 PlayerWidth = World.TileWidth;
-	real32 PlayerHeight = World.TileHeight;
-
 	World.TileMaps = (tile_map *)TileMaps;
 
 	position PlayerPos;
+	// Init memory and player's start tile
 	game_state *GameState = (game_state *)Memory->PermanentStorage;
 	if (!Memory->IsInitialized)
 	{
@@ -363,12 +362,12 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		Memory->IsInitialized = true;
 	}
 
+	// Take player's position from the gamestate, the tile we're on is determined by
+	// the screen x and y coordinates.
 	PlayerPos.TileMapX = GameState->PlayerTileMapX;
 	PlayerPos.TileMapY = GameState->PlayerTileMapY;
 	PlayerPos.TileX = FloorReal32ToInt32(GameState->PlayerX/World.TileWidth);
 	PlayerPos.TileY = FloorReal32ToInt32(GameState->PlayerY/World.TileHeight);
-	tile_map *TileMap = GetTileMap(&World, GameState->PlayerTileMapX, GameState->PlayerTileMapY);
-	Assert(TileMap);
 
 	for (int ControllerIndex = 0; ControllerIndex < ArrayCount(Input->Controllers);
 		 ++ControllerIndex)
@@ -403,45 +402,48 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 					dPlayerX = 1;
 				}
 
-				position TestPos = GetWorldPosition(&World, PlayerPos, dPlayerX, dPlayerY);
-				if (IsWorldPointEmpty(&World, TestPos))
+				if (dPlayerX || dPlayerY)
 				{
-					if (TestPos.TileMapX != GameState->PlayerTileMapX)
+					position TestPos = GetWorldPosition(&World, PlayerPos, dPlayerX, dPlayerY);
+					if (IsWorldPointEmpty(&World, TestPos))
 					{
-						if (dPlayerX < 0)
+						if (TestPos.TileMapX != GameState->PlayerTileMapX)
 						{
-							GameState->PlayerX =
-								World.CountX * World.TileWidth + World.TileWidth / 2.0f;
+							if (dPlayerX < 0)
+							{
+								GameState->PlayerX =
+									World.CountX * World.TileWidth + World.TileWidth / 2.0f;
+							}
+							else if (dPlayerX > 0)
+							{
+								GameState->PlayerX = 0 - World.TileWidth / 2.0f;
+							}
 						}
-						else if (dPlayerX > 0)
+						else if (TestPos.TileMapY != GameState->PlayerTileMapY)
 						{
-							GameState->PlayerX = 0 - World.TileWidth/2.0f;
+							if (dPlayerY < 0)
+							{
+								GameState->PlayerY =
+									World.CountY * World.TileHeight + World.TileHeight / 2.0f;
+							}
+							else if (dPlayerY > 0)
+							{
+								GameState->PlayerY = 0 - World.TileHeight / 2.0f;
+							}
 						}
+						PlayerPos.TileMapX = TestPos.TileMapX;
+						PlayerPos.TileMapY = TestPos.TileMapY;
+						PlayerPos.TileX = TestPos.TileX;
+						PlayerPos.TileY = TestPos.TileY;
+						GameState->PlayerTileMapX = PlayerPos.TileMapX;
+						GameState->PlayerTileMapY = PlayerPos.TileMapY;
+						GameState->DistanceToMoveX = dPlayerX * World.TileWidth;
+						if (!dPlayerX)
+						{
+							GameState->DistanceToMoveY = dPlayerY * World.TileHeight;
+						}
+						// GameState->Movable = false;
 					}
-					else if (TestPos.TileMapY != GameState->PlayerTileMapY)
-					{
-						if (dPlayerY < 0)
-						{
-							GameState->PlayerY =
-								World.CountY * World.TileHeight + World.TileHeight / 2.0f;
-						}
-						else if (dPlayerY > 0)
-						{
-							GameState->PlayerY = 0 - World.TileHeight/2.0f;
-						}
-					}
-					PlayerPos.TileMapX = TestPos.TileMapX;
-					PlayerPos.TileMapY = TestPos.TileMapY;
-					PlayerPos.TileX = TestPos.TileX;
-					PlayerPos.TileY = TestPos.TileY;
-					GameState->PlayerTileMapX = PlayerPos.TileMapX;
-					GameState->PlayerTileMapY = PlayerPos.TileMapY;
-					GameState->DistanceToMoveX = dPlayerX * World.TileWidth;
-					if (!dPlayerX)
-					{
-						GameState->DistanceToMoveY = dPlayerY * World.TileHeight;
-					}
-					// GameState->Movable = false;
 				}
 			}
 		}
@@ -488,6 +490,8 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		GameState->DistanceToMoveY -= MovementForFrame;
 	}
 
+	tile_map *TileMap = GetTileMap(&World, GameState->PlayerTileMapX, GameState->PlayerTileMapY);
+	Assert(TileMap);
 	DrawRectangle(
 		Buffer, 0.0f, 0.0f, (real32)Buffer->Width, (real32)Buffer->Height, 1.0f, 0.0f, 0.1f);
 	for (int Row = 0; Row < 9; ++Row)
@@ -512,13 +516,13 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	real32 PlayerR = 1.0f;
 	real32 PlayerG = 1.0f;
 	real32 PlayerB = 0.0f;
-	real32 PlayerLeft = GameState->PlayerX - PlayerWidth*0.5f;
-	real32 PlayerTop = GameState->PlayerY - PlayerHeight*0.5f;
+	real32 PlayerLeft = GameState->PlayerX - World.TileWidth*0.5f;
+	real32 PlayerTop = GameState->PlayerY - World.TileHeight*0.5f;
 	DrawRectangle(Buffer,
 				  PlayerLeft,
 				  PlayerTop,
-				  PlayerLeft + PlayerWidth,
-				  PlayerTop + PlayerHeight,
+				  PlayerLeft + World.TileWidth,
+				  PlayerTop + World.TileHeight,
 				  PlayerR,
 				  PlayerG,
 				  PlayerB);
