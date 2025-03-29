@@ -406,6 +406,30 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				position TestPos = GetWorldPosition(&World, PlayerPos, dPlayerX, dPlayerY);
 				if (IsWorldPointEmpty(&World, TestPos))
 				{
+					if (TestPos.TileMapX != GameState->PlayerTileMapX)
+					{
+						if (dPlayerX < 0)
+						{
+							GameState->PlayerX =
+								World.CountX * World.TileWidth + World.TileWidth / 2.0f;
+						}
+						else if (dPlayerX > 0)
+						{
+							GameState->PlayerX = 0 - World.TileWidth/2.0f;
+						}
+					}
+					else if (TestPos.TileMapY != GameState->PlayerTileMapY)
+					{
+						if (dPlayerY < 0)
+						{
+							GameState->PlayerY =
+								World.CountY * World.TileHeight + World.TileHeight / 2.0f;
+						}
+						else if (dPlayerY > 0)
+						{
+							GameState->PlayerY = 0 - World.TileHeight/2.0f;
+						}
+					}
 					PlayerPos.TileMapX = TestPos.TileMapX;
 					PlayerPos.TileMapY = TestPos.TileMapY;
 					PlayerPos.TileX = TestPos.TileX;
@@ -422,7 +446,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 			}
 		}
 	}
-#define PLAYER_MOVEMENT 60.0f
+#define PLAYER_MOVEMENT World.TileWidth*3
 	if (GameState->DistanceToMoveX < 0)
 	{
 		real32 MovementForFrame = PLAYER_MOVEMENT*Input->dtForFrame;
